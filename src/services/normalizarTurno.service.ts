@@ -15,7 +15,7 @@ export function normalizarTurno(turnoCrudo: TurnoCrudo): Turno | null {
 
   const documento = String(turnoCrudo.documento).trim();
 
-  const especialidad = turnoCrudo.especialidad.trim().toUpperCase();
+ const especialidad = turnoCrudo.especialidad.trim();
 
   const fecha = normalizarFecha(turnoCrudo.fecha);
   const hora = normalizarHora(turnoCrudo.hora);
@@ -24,6 +24,11 @@ export function normalizarTurno(turnoCrudo: TurnoCrudo): Turno | null {
   if (!fecha || !hora || confirmado === null) {
     return null;
   }
+  const medicoId = Number(turnoCrudo.medicoId);
+
+if (!Number.isInteger(medicoId) || medicoId <= 0) {
+  return null;
+}
 
   return {
     id,
@@ -33,6 +38,7 @@ export function normalizarTurno(turnoCrudo: TurnoCrudo): Turno | null {
     fecha,
     hora,
     confirmado,
+    medicoId,
     observaciones: turnoCrudo.observaciones?.trim(),
   };
 }

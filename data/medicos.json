@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "nombre": "Ana Torres",
+    "documento": "15456789",
+    "especialidad": "Pediatría",
+    "disponible": true
+  },
+  {
+    "id": 2,
+    "nombre": "Ana Torres",
+    "documento": "15456789",
+    "especialidad": "Pediatría",
+    "disponible": true
+  },
+  {
+    "id": 4,
+    "nombre": "Carlos Méndez",
+    "documento": "17654321",
+    "especialidad": "Odontología",
+    "disponible": true
+  },
+  {
+    "id": 7,
+    "nombre": "Laura Gómez",
+    "documento": "18345678",
+    "especialidad": "Nutrición",
+    "disponible": true
+  }
+]
