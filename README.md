@@ -311,7 +311,7 @@ Ajuste manual aplicado
 
 Schema Zod de Turno
 
-ChatGPT
+Asistente de IA
 
 Crear un schema Zod para Turno con documento string, especialidades permitidas, confirmado boolean y medicoId positivo.
 
@@ -321,7 +321,7 @@ Se ajustaron tipos, mensajes y formato de especialidades según la consigna.
 
 Schema Zod de Médico
 
-ChatGPT
+Asistente de IA
 
 Crear validación Zod para Médico con id, nombre, documento, especialidad y disponible.
 
@@ -331,7 +331,7 @@ Se revisaron mensajes y se reutilizó el schema de especialidad.
 
 Middleware de validación
 
-ChatGPT
+Asistente de IA
 
 Crear middleware Express que intercepte errores de Zod y devuelva un 400 detallando el campo.
 
@@ -341,7 +341,7 @@ Se integró con la estructura de errores requerida por la actividad.
 
 CRUD de Médico
 
-ChatGPT
+Asistente de IA
 
 Proponer controller, service y routes para CRUD de /medicos con arquitectura en capas.
 
@@ -351,7 +351,7 @@ Se adaptó a persistencia JSON y a los códigos HTTP solicitados.
 
 Query parameters
 
-ChatGPT
+Asistente de IA
 
 Agregar filtros de especialidad, fecha y medicoId para turnos, y especialidad/disponible para médicos sin crear endpoints nuevos.
 
@@ -361,7 +361,7 @@ Se ajustaron los nombres de parámetros al modelo del proyecto.
 
 Tests de Postman
 
-ChatGPT
+Asistente de IA
 
 Crear scripts para comprobar 200, 201, 400, 404 y JSON Schema.
 
@@ -371,7 +371,7 @@ Se adaptaron a las respuestas reales de TurnosRed y se verificaron manualmente e
 
 Diagnóstico de errores
 
-ChatGPT
+Asistente de IA
 
 Explicar errores de compilación TypeScript y respuestas ECONNREFUSED/JSON inválido.
 
@@ -384,3 +384,73 @@ Repositorio
 Repositorio público:
 
 https://github.com/francoismarcus26-coder/turnos-red
+
+## Actividad 3: Integraciones web
+
+### Arquitectura de componentes
+
+```mermaid
+flowchart LR
+    Cliente["Cliente HTTP / Postman"] -->|REST| Express["Express en el servidor HTTP"]
+    Express --> TurnosRoutes["Rutas de turnos"]
+    Express --> MedicosRoutes["Rutas de médicos"]
+    TurnosRoutes --> TurnosController["Controlador de turnos"]
+    MedicosRoutes --> MedicosController["Controlador de médicos"]
+    TurnosRoutes --> Zod["Middleware y schemas Zod"]
+    MedicosRoutes --> Zod
+    TurnosController --> TurnosServices["Servicios de turnos"]
+    MedicosController --> MedicosService["Servicio de médicos"]
+    TurnosServices --> TurnosJSON[("data/turnos.json")]
+    MedicosService --> MedicosJSON[("data/medicos.json")]
+    TurnosController -->|turno:creado / actualizado / eliminado| EventEmitter["EventEmitter"]
+    EventEmitter -->|turno:nuevo / actualizado / eliminado| SocketIO["Socket.IO"]
+    SocketIO -->|eventos en tiempo real| SocketClients["Clientes Socket.IO"]
+    Express -->|/api-docs| SwaggerUI["Swagger UI"]
+    SwaggerUI --> OpenAPI["OpenAPI generado por swagger-jsdoc"]
+    TurnosRoutes -. anotaciones .-> OpenAPI
+    MedicosRoutes -. anotaciones .-> OpenAPI
+```
+
+### Secuencia de `POST /turnos`
+
+```mermaid
+sequenceDiagram
+    actor Cliente as Cliente HTTP / Postman
+    participant Express
+    participant Router as Router de turnos
+    participant Zod as Middleware Zod
+    participant Controller as Controlador de turnos
+    participant Normalizer as normalizarTurno
+    participant Service as Servicio de archivo
+    participant JSON as data/turnos.json
+    participant Bus as EventEmitter
+    participant Socket as Socket.IO
+    actor Realtime as Clientes Socket.IO
+
+    Cliente->>Express: POST /turnos (JSON)
+    Express->>Router: Enruta la solicitud
+    Router->>Zod: Valida el body con turnoSchema
+    alt Body no válido
+        Zod-->>Cliente: 400 VALIDATION_ERROR
+    else Body válido
+        Zod->>Controller: Continúa con req.body validado
+        Controller->>Normalizer: Normaliza fecha, hora, documento e IDs
+        alt Normalización no válida o ID duplicado
+            Normalizer-->>Controller: Datos inválidos
+            Controller-->>Cliente: 400 (VALIDATION_ERROR o DUPLICATE_ID)
+        else Datos normalizados y no duplicados
+            Controller->>Service: Lee los turnos actuales
+            Service->>JSON: Lee el archivo
+            JSON-->>Service: Registros
+            Service-->>Controller: Turnos existentes
+            Controller->>Service: Guarda el nuevo turno
+            Service->>JSON: Escribe el archivo actualizado
+            JSON-->>Service: Escritura completada
+            Service-->>Controller: Guardado
+            Controller->>Bus: Emite turno:creado
+            Bus->>Socket: El servidor reenvía turno:nuevo
+            Socket-->>Realtime: Notificación en tiempo real
+            Controller-->>Cliente: 201 + mensaje y turno
+        end
+    end
+```
